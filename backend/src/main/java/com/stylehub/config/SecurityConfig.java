@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
+
 import java.util.List;
 
 @Configuration 
@@ -50,7 +51,6 @@ public class SecurityConfig {
     @Bean 
     public CorsConfigurationSource corsSource() {
         var c = new CorsConfiguration();
-        // Allows both local development and your live Render frontend domain
         c.setAllowedOriginPatterns(List.of("*"));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         c.setAllowedHeaders(List.of("*")); 
@@ -63,17 +63,24 @@ public class SecurityConfig {
 
     @Bean 
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors(c -> c.configurationSource(corsSource()))
+        http
+            .cors(c -> c.configurationSource(corsSource()))
             .csrf(c -> c.disable())
             .exceptionHandling(e -> e.authenticationEntryPoint(jwtAuthEntryPoint))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
+                // Permit CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                // Admin endpoints
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-                .anyRequest().authenticated())
+                // All other endpoints require authentication
+                .anyRequest().authenticated()
+            )
             .headers(h -> h.frameOptions(f -> f.disable()))
             .authenticationProvider(authProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

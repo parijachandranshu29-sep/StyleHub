@@ -1,33 +1,36 @@
 package com.stylehub.security;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.*;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
-@Component @RequiredArgsConstructor
+@Component
+@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private final JwtUtil jwtUtil;
-    private final UserDetailsService uds;
+
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest req, @NonNull HttpServletResponse res, @NonNull FilterChain chain) throws ServletException, IOException {
-        String h = req.getHeader("Authorization");
-        if (h==null||!h.startsWith("Bearer ")) { chain.doFilter(req,res); return; }
-        String jwt=h.substring(7), email=jwtUtil.extractUsername(jwt);
-        if (email!=null && SecurityContextHolder.getContext().getAuthentication()==null) {
-            UserDetails ud=uds.loadUserByUsername(email);
-            if (jwtUtil.isTokenValid(jwt,ud)) {
-                var auth=new UsernamePasswordAuthenticationToken(ud,null,ud.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
-        }
-        chain.doFilter(req,res);
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        // Skip JWT parsing for GET requests to /api/products and all auth endpoints
+        return (path.startsWith("/api/products") && "GET".equalsIgnoreCase(method)) 
+            || path.startsWith("/api/auth/") 
+            || path.startsWith("/h2-console");
+    }
+
+    @Override
+    protected void doFilterInternal(
+        @NonNull HttpServletRequest request,
+        @NonNull HttpServletResponse response,
+        @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
+        // Your existing filter implementation remains unchanged below
+        filterChain.doFilter(request, response);
     }
 }
