@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://stylehub-backend-tny8.onrender.com/api",
+  baseURL: "https://stylehub-backend-tny.onrender.com/api",
   headers: { "Content-Type": "application/json" }
 });
 

@@ -69,18 +69,15 @@ public class SecurityConfig {
             .exceptionHandling(e -> e.authenticationEntryPoint(jwtAuthEntryPoint))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
-                // Permit CORS preflight requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                // Admin endpoints
-                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-                // All other endpoints require authentication
-                .anyRequest().authenticated()
-            )
+                
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/h2-console/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+            .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+            .anyRequest().authenticated()
+        )
+            
             .headers(h -> h.frameOptions(f -> f.disable()))
             .authenticationProvider(authProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
